@@ -1,56 +1,55 @@
-import { ComponentFixture, TestBed, tick } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
-import { AppComponent } from '../app.component';
-import { ApiService } from '../services/api.service';
-import { throwError, of } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { HttpClientModule, HttpClient } from '@angular/common/http';
+import { ApiService } from './api.service';
+import { of } from 'rxjs';
 
-describe('AppComponent', () => {
-  let component: AppComponent;
-  let fixture: ComponentFixture<AppComponent>;
-  let apiService: ApiService;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [AppComponent],
-      imports: [FormsModule, HttpClientModule],
-      providers: [ApiService],
-    }).compileComponents();
-
-    // Get the service instance injected in the TestBed
-    apiService = TestBed.inject(ApiService);
-  });
+describe('ApiService', () => {
+  let service: ApiService;
+  let httpSpy: jasmine.SpyObj<HttpClient>;
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(AppComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+    httpSpy = jasmine.createSpyObj('HttpClient', ['get']);
+
+    TestBed.configureTestingModule({
+      imports: [HttpClientModule],
+      providers: [ApiService, { provide: HttpClient, useValue: httpSpy }],
+    });
+    service = TestBed.inject(ApiService);
   });
 
-  it('should create the app', () => {
-    expect(component).toBeTruthy();
+  it('should be created', () => {
+    expect(service).toBeTruthy();
   });
 
-  it('should initialize with empty repositories and not loading', () => {
-    expect(component.repositories).toEqual([]);
-    expect(component.loading).toBe(false);
+  it('should get user repositories', () => {
+    const username = 'sid120';
+    const page = 1;
+    const itemsPerPage = 10;
+    const mockResponse = [{ name: 'repo1' }, { name: 'repo2' }];
+
+    httpSpy.get.and.returnValue(of(mockResponse));
+
+    service.getUserRepositories(username, page, itemsPerPage).subscribe((repos) => {
+      expect(repos).toEqual(mockResponse);
+    });
+
+    expect(httpSpy.get).toHaveBeenCalledWith(`https://api.github.com/users/${username}/repos`, {
+      params: { page: '1', per_page: '10' },
+    });
   });
 
-  it('should handle errors when fetching repositories', () => {
-    const username = 'testuser';
-    const errorMessage = 'An error occurred!';
+  it('should get repo details', () => {
+    const owner = 'sid120';
+    const repo = 'repo1';
+    const mockResponse = { name: 'repo1', description: 'Repository description' };
 
-    // Use spyOn on the instance of apiService
-    spyOn(apiService, 'getUserRepositories').and.returnValue(throwError(errorMessage));
+    httpSpy.get.and.returnValue(of(mockResponse));
 
-    component.username = username;
-    component.searchUser();
+    service.getRepoDetails(owner, repo).subscribe((repoDetails) => {
+      expect(repoDetails).toEqual(mockResponse);
+    });
 
-
-    // Add an extra tick to handle the asynchronous error
-    tick();
-
-    expect(component.loading).toBe(false);
-    expect(component.repositories).toEqual([]);
+    expect(httpSpy.get).toHaveBeenCalledWith(`https://api.github.com/repos/${owner}/${repo}`);
   });
+
 });

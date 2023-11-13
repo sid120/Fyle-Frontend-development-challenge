@@ -7,6 +7,9 @@ import { map, switchMap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ApiService {
+  static getUserRepositories(getUserRepositories: any) {
+    throw new Error('Method not implemented.');
+  }
   getUserDetails(username: string) {
     throw new Error('Method not implemented.');
   }
@@ -51,7 +54,7 @@ export class ApiService {
   // }
 
   getUserProfile(username: string): Observable<any> {
-    const url = `${this.apiUrl}/users/${username}`;
+    const url = `${this.apiUrl}/users/${"username"}`;
     return this.http.get<any>(url);
   }
   
